@@ -436,13 +436,44 @@ function AddExerciseModal({ onAdd, onClose }: AddExerciseModalProps) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+const STORAGE_KEY_PLAN = "workout_plan";
+const STORAGE_KEY_COMPLETED = "workout_completed";
+
+function loadPlan(): Exercise[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PLAN);
+    if (raw) return JSON.parse(raw) as Exercise[];
+  } catch (e) {
+    console.warn("loadPlan error", e);
+  }
+  return DEFAULT_PLAN;
+}
+
+function loadCompleted(): Set<number> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_COMPLETED);
+    if (raw) return new Set(JSON.parse(raw) as number[]);
+  } catch (e) {
+    console.warn("loadCompleted error", e);
+  }
+  return new Set();
+}
+
 export default function Index() {
-  const [plan, setPlan] = useState<Exercise[]>(DEFAULT_PLAN);
-  const [completed, setCompleted] = useState<Set<number>>(new Set());
+  const [plan, setPlan] = useState<Exercise[]>(loadPlan);
+  const [completed, setCompleted] = useState<Set<number>>(loadCompleted);
   const [timerExercise, setTimerExercise] = useState<Exercise | null>(null);
   const [timerMode, setTimerMode] = useState<"work" | "rest">("work");
   const [workoutStarted, setWorkoutStarted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PLAN, JSON.stringify(plan));
+  }, [plan]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_COMPLETED, JSON.stringify([...completed]));
+  }, [completed]);
 
   const addExercise = (ex: Omit<Exercise, "id">) => {
     const newId = Math.max(...plan.map((e) => e.id), 0) + 1;
@@ -564,7 +595,7 @@ export default function Index() {
               <span className="text-green-400 text-xs font-medium tracking-widest uppercase">В процессе</span>
             </div>
             <button
-              onClick={() => { setWorkoutStarted(false); setCompleted(new Set()); }}
+              onClick={() => { setWorkoutStarted(false); setCompleted(new Set()); localStorage.removeItem(STORAGE_KEY_COMPLETED); }}
               className="text-white/30 hover:text-white/60 text-xs transition-colors"
             >
               Сбросить
