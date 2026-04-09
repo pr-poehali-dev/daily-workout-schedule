@@ -286,13 +286,173 @@ function ExerciseCard({ exercise, index, completed, onToggle, onTimer }: Exercis
   );
 }
 
+// ── Add Exercise Modal ────────────────────────────────────────────────────────
+
+const EMOJI_OPTIONS = ["💪", "🔥", "🦵", "⚡", "🧘", "🏃", "🤸", "🏋️", "🚴", "🥊", "🧗", "🤼"];
+const CATEGORY_OPTIONS = ["Кардио", "Грудь", "Ноги", "Кор", "Растяжка", "Спина", "Плечи", "Руки"];
+
+interface AddExerciseModalProps {
+  onAdd: (ex: Omit<Exercise, "id">) => void;
+  onClose: () => void;
+}
+
+function AddExerciseModal({ onAdd, onClose }: AddExerciseModalProps) {
+  const [name, setName] = useState("");
+  const [sets, setSets] = useState("3");
+  const [reps, setReps] = useState("10–12");
+  const [rest, setRest] = useState("60");
+  const [category, setCategory] = useState("Кор");
+  const [emoji, setEmoji] = useState("💪");
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (!name.trim()) { setError("Введите название упражнения"); return; }
+    onAdd({
+      name: name.trim(),
+      sets: Math.max(1, parseInt(sets) || 1),
+      reps: reps.trim() || "10",
+      rest: Math.max(0, parseInt(rest) || 0),
+      category,
+      emoji,
+    });
+    onClose();
+  };
+
+  const inputClass =
+    "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 outline-none focus:border-orange-500/50 transition-colors font-body";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+      <div
+        className="relative w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 border border-white/10 animate-scale-in"
+        style={{ background: "hsl(220,20%,10%)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display text-xl text-white tracking-wide">НОВОЕ УПРАЖНЕНИЕ</h2>
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+
+        {/* Emoji picker */}
+        <div className="mb-4">
+          <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Иконка</label>
+          <div className="flex flex-wrap gap-2">
+            {EMOJI_OPTIONS.map((e) => (
+              <button
+                key={e}
+                onClick={() => setEmoji(e)}
+                className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all ${
+                  emoji === e
+                    ? "bg-orange-500/30 border border-orange-500/60 scale-110"
+                    : "bg-white/5 border border-white/10 hover:bg-white/10"
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Name */}
+        <div className="mb-4">
+          <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Название</label>
+          <input
+            className={inputClass}
+            placeholder="Например: Подтягивания"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setError(""); }}
+            autoFocus
+          />
+          {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+        </div>
+
+        {/* Sets + Reps */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Подходы</label>
+            <input
+              className={inputClass}
+              type="number"
+              min="1"
+              value={sets}
+              onChange={(e) => setSets(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Повторы</label>
+            <input
+              className={inputClass}
+              placeholder="10–12"
+              value={reps}
+              onChange={(e) => setReps(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Rest + Category */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div>
+            <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Отдых (сек)</label>
+            <input
+              className={inputClass}
+              type="number"
+              min="0"
+              value={rest}
+              onChange={(e) => setRest(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-white/40 text-xs tracking-widest uppercase mb-2 block">Категория</label>
+            <select
+              className={inputClass + " cursor-pointer"}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{ background: "rgba(255,255,255,0.05)" }}
+            >
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c} style={{ background: "hsl(220,20%,12%)" }}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={handleSubmit}
+          className="w-full py-3.5 rounded-2xl font-display text-lg text-white tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98]"
+          style={{
+            background: "linear-gradient(135deg, hsl(25,100%,50%), hsl(10,100%,45%))",
+            boxShadow: "0 0 20px hsl(25 100% 55% / 0.3)",
+          }}
+        >
+          + ДОБАВИТЬ В ПЛАН
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function Index() {
+  const [plan, setPlan] = useState<Exercise[]>(DEFAULT_PLAN);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [timerExercise, setTimerExercise] = useState<Exercise | null>(null);
   const [timerMode, setTimerMode] = useState<"work" | "rest">("work");
   const [workoutStarted, setWorkoutStarted] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const addExercise = (ex: Omit<Exercise, "id">) => {
+    const newId = Math.max(...plan.map((e) => e.id), 0) + 1;
+    setPlan((prev) => [...prev, { ...ex, id: newId }]);
+  };
+
+  const removeExercise = (id: number) => {
+    setPlan((prev) => prev.filter((e) => e.id !== id));
+    setCompleted((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  };
 
   const toggleCompleted = (id: number) => {
     setCompleted((prev) => {
@@ -309,8 +469,8 @@ export default function Index() {
   };
 
   const done = completed.size;
-  const total = DEFAULT_PLAN.length;
-  const progressPct = (done / total) * 100;
+  const total = plan.length;
+  const progressPct = total > 0 ? (done / total) * 100 : 0;
 
   return (
     <div className="min-h-screen" style={{ background: "hsl(220,20%,8%)" }}>
@@ -414,8 +574,8 @@ export default function Index() {
 
         {/* List */}
         <div className="space-y-2">
-          {DEFAULT_PLAN.map((ex, i) => (
-            <div key={ex.id} className="animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+          {plan.map((ex, i) => (
+            <div key={ex.id} className="animate-fade-in group/wrap relative" style={{ animationDelay: `${i * 50}ms` }}>
               <ExerciseCard
                 exercise={ex}
                 index={i}
@@ -423,9 +583,26 @@ export default function Index() {
                 onToggle={() => toggleCompleted(ex.id)}
                 onTimer={() => openTimer(ex, "work")}
               />
+              {ex.id > DEFAULT_PLAN[DEFAULT_PLAN.length - 1].id && (
+                <button
+                  onClick={() => removeExercise(ex.id)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/wrap:opacity-100 transition-all text-[10px] leading-none"
+                  title="Удалить"
+                >
+                  <Icon name="X" size={10} />
+                </button>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Add Exercise Button */}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="w-full mt-3 py-3 rounded-2xl font-display text-sm text-white/50 hover:text-white tracking-wider border border-dashed border-white/15 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all flex items-center justify-center gap-2"
+        >
+          <Icon name="Plus" size={16} /> ДОБАВИТЬ УПРАЖНЕНИЕ
+        </button>
 
         {/* Quick timers */}
         {workoutStarted && (
@@ -433,7 +610,7 @@ export default function Index() {
             <p className="text-white/30 text-xs tracking-[0.2em] uppercase mb-3">Быстрый таймер</p>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => openTimer(DEFAULT_PLAN[1], "work")}
+                onClick={() => openTimer(plan[0] ?? DEFAULT_PLAN[0], "work")}
                 className="flex items-center gap-3 p-4 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all text-left"
                 style={{ background: "hsl(25,100%,55%,0.08)" }}
               >
@@ -450,7 +627,7 @@ export default function Index() {
               </button>
 
               <button
-                onClick={() => openTimer(DEFAULT_PLAN[1], "rest")}
+                onClick={() => openTimer(plan[0] ?? DEFAULT_PLAN[0], "rest")}
                 className="flex items-center gap-3 p-4 rounded-2xl border border-green-500/20 hover:border-green-500/40 transition-all text-left"
                 style={{ background: "rgba(74,222,128,0.08)" }}
               >
@@ -474,6 +651,13 @@ export default function Index() {
           exercise={timerExercise}
           mode={timerMode}
           onClose={() => setTimerExercise(null)}
+        />
+      )}
+
+      {showAddModal && (
+        <AddExerciseModal
+          onAdd={addExercise}
+          onClose={() => setShowAddModal(false)}
         />
       )}
     </div>
